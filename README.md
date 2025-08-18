@@ -16,7 +16,7 @@
 
 ## Screenshot
 
-![Ravix Terminal Screenshot](images/screenshot1.jpg)
+<img alt="Ravix Terminal Screenshot" src="images/screenshot1.jpg" height="1230"/>
 
 ## Library Support (Coming Soon)
 
