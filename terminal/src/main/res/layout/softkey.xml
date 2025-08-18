@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="40dp"
+android:orientation="horizontal"
+android:background="#000000"
+android:gravity="center">
+
+<Button
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:text="@string/ctrl"
+    android:textStyle="bold"
+    android:id="@+id/ctrl"
+    android:textColor="#FFFFFF"
+    android:background="?attr/selectableItemBackground"
+    android:fontFamily="monospace" />
+
+<Button
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:text="@string/alt"
+    android:id="@+id/alt"
+    android:textStyle="bold"
+    android:textColor="#FFFFFF"
+    android:background="?attr/selectableItemBackground"
+    android:fontFamily="monospace" />
+
+<Button
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:text="@string/esc"
+    android:textStyle="bold"
+    android:id="@+id/esc"
+    android:textColor="#FFFFFF"
+    android:background="?attr/selectableItemBackground"
+    android:fontFamily="monospace" />
+
+<Button
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:id="@+id/tab"
+    android:text="@string/tab"
+    android:textStyle="bold"
+    android:textColor="#FFFFFF"
+    android:background="?attr/selectableItemBackground"
+    android:fontFamily="monospace" />
+
+</LinearLayout>

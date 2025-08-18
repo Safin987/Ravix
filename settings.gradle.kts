@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Ravix"
 include(":app")
+include(":terminal")

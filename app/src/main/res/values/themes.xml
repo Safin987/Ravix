@@ -1,9 +1,14 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Ravix" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-    </style>
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Plain black background -->
+        <item name="backgroundColor">@android:color/black</item>
+        <item name="android:windowBackground">@android:color/black</item>
 
-    <style name="Theme.Ravix" parent="Base.Theme.Ravix" />
+        <!-- Remove ripples and highlights -->
+        <item name="colorControlHighlight">@android:color/transparent</item>
+        <item name="colorButtonNormal">@android:color/transparent</item>
+
+        <!-- Remove elevation -->
+        <item name="android:windowElevation">0dp</item>
+    </style>
 </resources>

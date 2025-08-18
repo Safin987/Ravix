@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ctrl">CTRL</string>
+    <string name="alt">ALT</string>
+    <string name="esc">ESC</string>
+    <string name="tab">TAB</string>
+</resources>
