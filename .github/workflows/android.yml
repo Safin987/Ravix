@@ -1,6 +1,11 @@
 name: Android CI
 
-on: [ push, pull_request ]
+on: [push, pull_request]
+
+env:
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+  # put commandline-tools and platform-tools first so sdkmanager/adb are available
+  PATH: /usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/platform-tools:/usr/local/bin:${PATH}
 
 jobs:
   build:
@@ -16,16 +21,43 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Install missing Android SDK packages
+      - name: Ensure Android SDK root exists
         run: |
-          yes | sdkmanager "ndk;29.0.13846066"
-          yes | sdkmanager --licenses
+          sudo mkdir -p "$ANDROID_SDK_ROOT"
+          sudo chown -R "$(whoami)" "$ANDROID_SDK_ROOT"
+
+      - name: Install Android command-line tools (if missing)
+        run: |
+          set -e
+          if [ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            cd /tmp
+            # download latest command-line tools (Google keeps a stable "latest" URL)
+            curl -sSfL "https://dl.google.com/android/repository/commandlinetools-linux-latest.zip" -o cmdline-tools.zip
+            unzip -q cmdline-tools.zip
+            mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+            # move contents (zip contains a "cmdline-tools" directory)
+            mv cmdline-tools/* "$ANDROID_SDK_ROOT/cmdline-tools/latest/"
+            rm -f cmdline-tools.zip
+          else
+            echo "cmdline-tools already installed"
+          fi
+
+      - name: Accept SDK licenses and install required SDK/NDK
+        run: |
+          set -e
+          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --version
+          # update platforms/tools first (safe to re-run)
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+          # install specific NDK (change version here if you want)
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "ndk;29.0.13846066"
+          # accept remaining/licenses
+          yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
