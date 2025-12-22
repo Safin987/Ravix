@@ -14,31 +14,5 @@ interface KeyListeners {
      */
     fun onButtonPressed(b : CharArray)
 
-    /**
-     * Sends if the key pressed is a control key.
-     */
-    fun isCtrl(ctrl : Boolean)
-
-    /**
-     * Sends if the key pressed is an alt key.
-     */
-    fun isAlt(alt : Boolean)
-
-
-    /**
-     * Checks if the control key is still active in the `TerminalView` class.
-     * @return `true` if the control key is still active, `false` otherwise.
-     *
-     * @see com.terminal.view.TerminalView
-     */
-    fun checkCtrl(): Boolean
-
-    /**
-     * Checks if the alternative key is still active in the `TerminalView` class.
-     * @return `true` if the alternative key is still active, `false` otherwise.
-     *
-     * @see com.terminal.view.TerminalView
-     */
-    fun checkAlt(): Boolean
 
 }
