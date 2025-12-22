@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.util.profile
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,12 +12,13 @@ android {
     defaultConfig {
         applicationId = "com.ravix"
         minSdk = 28
-        targetSdk = 36
+        targetSdk = 28
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
 
     buildTypes {
         release {
@@ -25,6 +28,10 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug{
+            isProfileable = true
+        }
+
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

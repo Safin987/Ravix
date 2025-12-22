@@ -3,8 +3,13 @@ package com.terminal.view
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.LinearLayout
+import com.terminal.LinuxStartup
 import com.terminal.pty.PseudoTerminal
 import com.terminal.key.SoftKeyView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class TerminalContainer@JvmOverloads constructor(
     context: Context,
@@ -15,13 +20,18 @@ class TerminalContainer@JvmOverloads constructor(
     private val terminalView = TerminalView(context)
     private val softKeyView : SoftKeyView = SoftKeyView(context).apply {
         attachKeyListener(terminalView.getKeyListener())
-    }
-    val pseudoTerminal = PseudoTerminal(terminalView.getUpdateListener()).apply {
-        terminalView.attachInputListener(this)
-        startPty()
-        terminalView.executeCommand("stty -a".toCharArray()) // This command checks terminal settings
+        bindLifecycle(context as androidx.lifecycle.LifecycleOwner)
     }
 
+    val pseudoTerminal = PseudoTerminal().apply {
+        terminalView.attachInputListener(this)
+        attachView(terminalView)
+        startPty()
+
+
+        val script = LinuxStartup.startLinuxEnvironment(context)
+        terminalView.executeCommand(script.toCharArray())
+    }
 
     init {
         orientation = VERTICAL

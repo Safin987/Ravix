@@ -1,11 +1,11 @@
+
 name: Android CI
 
-on: [ push, pull_request ]
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -16,13 +16,13 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Install Android SDK components
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;29.0.13846066" "platform-tools" "platforms;android-33"
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-
-      - name: Install missing Android SDK packages
-        run: |
-          yes | sdkmanager "ndk;29.0.13846066"
-          yes | sdkmanager --licenses
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
