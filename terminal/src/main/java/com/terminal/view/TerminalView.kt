@@ -2,17 +2,20 @@ package com.terminal.view
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Typeface
+import android.text.InputType
 import android.util.Log
 import android.view.KeyEvent
-import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.BaseInputConnection
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
+import com.terminal.key.ControlAlt
 import com.terminal.key.KeyListeners
+import com.terminal.pty.ChunkManager
 import com.terminal.pty.InputListener
 import com.terminal.pty.PseudoListener
 import com.terminal.renderers.Renderer
-import com.terminal.renderers.TextLine
 
 /**
  * TerminalView is a custom view that represents a terminal interface. it is the frontend for the terminal emulator.
@@ -32,10 +35,8 @@ import com.terminal.renderers.TextLine
  */
 class TerminalView(context: Context) : View(context), KeyListeners, PseudoListener {
 
-    private var ctrlActive = false
-    private var altActive = false
     private var isSizeChanged = false
-    private var renderer = Renderer(this, context)
+    private var renderer = Renderer(context)
     private lateinit var inputListener: InputListener
 
     /**
@@ -45,6 +46,15 @@ class TerminalView(context: Context) : View(context), KeyListeners, PseudoListen
     init {
         isFocusable = true
         isFocusableInTouchMode = true
+
+        setOnClickListener {
+            // Request focus and show keyboard when clicked
+            if (requestFocus()) {
+                val imm =
+                    context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
+            }
+        }
     }
 
     /**
@@ -59,33 +69,19 @@ class TerminalView(context: Context) : View(context), KeyListeners, PseudoListen
         inputListener = listener
     }
 
+
     /**
      * Executes a command in the terminal by sending the command to the `PseudoTerminal` through input listener.
      *
      * @param command The command to be executed, represented as a CharArray.
      * @param enter If true, the command will be followed by a newline character (simulating the Enter key press).
      *
-     * @see com.terminal.pty.InputListener.onInput
+     * @see InputListener.onInput
      * @see com.terminal.pty.PseudoTerminal
      */
     fun executeCommand(command: CharArray, enter: Boolean = true) {
         inputListener.onInput(command)
         if (enter) inputListener.onNewLine()
-    }
-
-    /**
-     * Sets the font of the terminal. Redraw is called after updating the font.
-     * It is recommended to use monospace fonts for proper alignment and readability.
-     */
-    fun setTerminalFont(typeface: Typeface) {
-        renderer.setFont(typeface)
-    }
-
-    /**
-     * Sets the text size of the terminal. Redraw is called after updating the text size.
-     */
-    fun setTextSize(size: Float) {
-        renderer.setTextSize(size)
     }
 
     /**
@@ -97,38 +93,50 @@ class TerminalView(context: Context) : View(context), KeyListeners, PseudoListen
         renderer.draw(canvas)
     }
 
-    // The number of rows and columns is calculated based on the view size.Note that this is done only once when the size changes for first time.
+    fun setTerminalFont(typeface: android.graphics.Typeface) {
+        val charWidth = renderer.getPainter().measureText(" ")
+        renderer.updateTerminalFont(typeface)
+        ChunkManager.setUnitChunkWidth(charWidth)
+        invalidate()
+    }
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (!isSizeChanged) {
             val charWidth = renderer.getPainter().measureText(" ") // Monospace
-            renderer.setMaxColumns((w / charWidth).toInt())
-            renderer.setMaxRow(h / renderer.getLineHeight())
+            ChunkManager.MAX_ROWS = (w / charWidth).toInt()
+            ChunkManager.MAX_COLUMNS=(h / renderer.getLineHeight())
+            //inputListener.onResize((w / charWidth).toInt(), h / renderer.getLineHeight())
             isSizeChanged = true
         }
     }
 
+
     /**
      * triggered when the 'PseudoTerminal' is updated with new chunks of text.
-     * @param chunks A mutable list of `TextLine` objects representing the updated text.
-     * 'Renderer` will save it as a reference and will be used to render the terminal view.
-     * @see com.terminal.pty.PseudoTerminal.onOutputFromNative
-     * @see com.terminal.view.TerminalView
-     * @see Renderer
      */
-    override fun onUpdate(chunks: MutableList<TextLine>) {
-        renderer.setChunks(chunks)
+    override fun onUpdate(start : Int , end : Int) {
+        // renderer.setChunks(chunks)
         invalidate() // Redraw the view with the updated chunks
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (event?.action == MotionEvent.ACTION_DOWN) {
-            requestFocus()
-            val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
+    override fun onCheckIsTextEditor(): Boolean = true
+
+    override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection {
+        //outAttrs.inputType = InputType.TYPE_CLASS_TEXT
+        outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI
+
+        return object : BaseInputConnection(this, true) {
+            override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
+                if (!text.isNullOrEmpty()) {
+                    inputListener.onInput(text.toString().toCharArray())
+                }
+                return true
+            }
+
         }
-        return super.onTouchEvent(event)
     }
+
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         return when (keyCode) {
@@ -136,11 +144,36 @@ class TerminalView(context: Context) : View(context), KeyListeners, PseudoListen
                 inputListener.onNewLine()
                 true
             }
+
+            KeyEvent.KEYCODE_DEL -> {
+                inputListener.onInput(charArrayOf(0x7F.toChar())) // ASCII DEL
+                true
+            }
+
             else -> {
                 val char = event.unicodeChar.toChar()
-                if (char != 0.toChar()) {
-                    inputListener.onInput(charArrayOf(char))
-                    Log.d("Input", "Key pressed: $char")
+                val sendChar = if (ControlAlt.isCtrl.value!! && char != 0.toChar()) {
+                    Log.d("Input", "Key pressed: $char (Ctrl: ${ControlAlt.isCtrl.value})")
+
+                    ControlAlt.isCtrl.value = false
+                    // Map Ctrl + key to control code
+                    when (char) {
+                        in 'a'..'z' -> (char.uppercaseChar().code - 'A'.code + 1).toChar()
+                        in 'A'..'Z' -> (char.code - 'A'.code + 1).toChar()
+                        else -> char
+                    }
+                } else if (ControlAlt.isAlt.value!! && char != 0.toChar()) {
+                    Log.d("Input", "Key pressed: $char (Alt: ${ControlAlt.isAlt.value})")
+
+                    ControlAlt.isAlt.value = false
+                    // Alt is usually sent as ESC + char
+                    val esc = 0x1B.toChar()
+                    inputListener.onInput(charArrayOf(esc, char))
+                    0.toChar() // Already sent both characters
+                } else char
+
+                if (sendChar != 0.toChar()) {
+                    inputListener.onInput(charArrayOf(sendChar))
                     true
                 } else {
                     super.onKeyDown(keyCode, event)
@@ -148,7 +181,6 @@ class TerminalView(context: Context) : View(context), KeyListeners, PseudoListen
             }
         }
     }
-
 
     /**
      * Returns the soft key listener associated with this terminal view.
@@ -158,20 +190,10 @@ class TerminalView(context: Context) : View(context), KeyListeners, PseudoListen
         return this
     }
 
-    override fun onKeyDown() {
-
-    }
-
-    override fun onKeyUp() {
-
-    }
-
-    override fun onKeyRight() {
-    }
-
-    override fun onKeyLeft() {
-
-    }
+    override fun onKeyDown() {}
+    override fun onKeyUp() {}
+    override fun onKeyRight() {}
+    override fun onKeyLeft() {}
 
     /**
      *  @param b is the character array representing the key pressed.
@@ -180,39 +202,6 @@ class TerminalView(context: Context) : View(context), KeyListeners, PseudoListen
      */
     override fun onButtonPressed(b: CharArray) {
         inputListener.onInput(b)
-    }
-
-    override fun isCtrl(ctrl: Boolean) {
-        ctrlActive = ctrl
-    }
-
-    override fun isAlt(alt: Boolean) {
-        altActive = alt
-    }
-
-    /**
-     * Checks if the control key is still active in the `TerminalView` class.
-     * @return `true` if the control key is still active, `false` otherwise.
-     *
-     * @see com.terminal.view.TerminalView
-     */
-    override fun checkCtrl(): Boolean = ctrlActive
-
-    /**
-     * Checks if the alternative key is still active in the `TerminalView` class.
-     * @return `true` if the alternative key is still active, `false` otherwise.
-     *
-     * @see com.terminal.view.TerminalView
-     */
-    override fun checkAlt(): Boolean = altActive
-
-    /**
-     * Returns the chunk update listener associated with this terminal view.
-     * This is used to receive updates from the `PseudoTerminal` when new chunks of text are available.
-     * @see com.terminal.pty.PseudoTerminal
-     */
-    fun getUpdateListener(): PseudoListener {
-        return this
     }
 
 }

@@ -1,12 +1,9 @@
 package com.terminal.renderers
 
-class TextLine(segments: MutableList<LineSegment>)  {
-    private val lineSegment = segments
+import android.graphics.Color
 
-    /**
-     * Returns the list of line segments that make up this text line.
-     */
-    fun getSegments(): MutableList<LineSegment> {
-        return lineSegment
-    }
+class TextLine(val colSize: Int) {
+    fun getWidth(): Int = colSize
+    var array = CharArray(colSize) { i -> ' ' }
+    private val styles = IntArray(colSize) { i -> Color.WHITE }
 }
