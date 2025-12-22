@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    id("maven-publish")
 }
 
 android {
@@ -47,9 +48,21 @@ android {
     }
     buildToolsVersion = "36.0.0"
 }
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "com.terminal"
+            artifactId = "core"
+            version = "0.1"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+}
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
