@@ -54,7 +54,6 @@ publishing {
             groupId = "com.terminal"
             artifactId = "core"
             version = "0.1"
-
             afterEvaluate {
                 from(components["release"])
             }
