@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget  // Add this import at the top if needed
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -33,9 +35,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
@@ -47,19 +46,32 @@ android {
         viewBinding = false
     }
     buildToolsVersion = "36.0.0"
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
-publishing {
-    publications {
-        register<MavenPublication>("release") {
-            groupId = "com.terminal"
-            artifactId = "core"
-            version = "0.1"
-            afterEvaluate {
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {  // This uses the default name "release"
                 from(components["release"])
+
+                groupId = "com.terminal"
+                artifactId = "core"
+                version = "0.1"
             }
         }
     }
 }
+        kotlin {
+            compilerOptions {
+                jvmTarget.set(JvmTarget.JVM_17)
+            }
+        }
 
 dependencies {
     implementation(libs.androidx.core.ktx)

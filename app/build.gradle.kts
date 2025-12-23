@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.util.profile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget  // Add this import at the top if needed
 
 plugins {
     alias(libs.plugins.android.application)
@@ -28,17 +28,16 @@ android {
                 "proguard-rules.pro"
             )
         }
-        debug{
-            isProfileable = true
-        }
-
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "11"
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
